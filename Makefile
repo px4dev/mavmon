@@ -40,7 +40,6 @@ LDFLAGS		 = $(ARCH_FLAGS) \
 		   -T $(LDSCRIPT) \
 		   -T $(LCM3_LD)
 
-
 #
 # Toolchain
 #
@@ -54,6 +53,7 @@ STM32FLASH	 = ../stm32flash/stm32flash
 # libopencm3
 #
 LCM3		 = ./libopencm3
+LCM3_URL	 = https://github.com/libopencm3/libopencm3.git
 LCM3_LIB	 = opencm3_stm32f1
 LCM3_TARGETS	 = stm32/f1
 LCM3_LD		 = $(LCM3)/lib/libopencm3_stm32f1.ld
@@ -63,6 +63,7 @@ INCDIRS		+= $(LCM3)/include
 # U8glib
 #
 U8GLIB		 = ./u8glib
+U8GLIB_URL	 = https://code.google.com/p/u8glib/
 U8GLIB_EXCLUDE	 = $(U8GLIB)/csrc/chessengine.c \
 		   $(U8GLIB)/csrc/u8g_com_api_16% \
 		   $(U8GLIB)/csrc/u8g_com_arduino% \
@@ -83,6 +84,12 @@ CFLAGS		+= -Wno-unused \
 		   -DUSE_CUSTOM_DELAY
 
 #
+# m2tklib
+#
+M2TKLIB		 = ./m2tklib
+M2TKLIB_URL	 = https://code.google.com/p/m2tklib/
+
+#
 # Build controls
 #
 OBJS		 = $(SRCS:.c=.o)
@@ -101,8 +108,23 @@ PRODUCTS	 = $(addprefix $(PRODUCT),$(SUFFIXES))
 all: $(PRODUCTS)
 
 .PHONY: $(LCM3)
-$(LCM3):
+$(LCM3): $(LCM3)/.git
 	$(Q) make -C $(LCM3) TARGETS=$(LCM3_TARGETS) lib
+
+$(LCM3)/.git:
+	$(Q) git clone $(LCM3_URL)
+
+.PHONY: $(U8GLIB)
+$(U8GLIB): $(U8GLIB)/.hg
+
+$(U8GLIB)/.hg:
+	$(Q) hg clone $(U8GLIB_URL)
+
+.PHONY: $(M2TKLIB)
+$(M2TKLIB): $(M2TKLIB)/.hg
+
+$(M2TKLIB)/.hg:
+	$(Q) hg clone $(M2TKLIB_URL)
 
 upload: $(PRODUCT).bin
 	@echo UPLOAD $<
@@ -119,6 +141,8 @@ $(PRODUCT).elf: $(OBJS) $(LDSCRIPT) $(GLOBAL_DEPS) $(LCM3)
 %.bin: %.elf
 	@echo BIN $@
 	$(Q) $(OBJCOPY) -O binary $^ $@
+
+$(SRCS): $(LCM3) $(U8GLIB)
 
 .PHONY: clean
 clean:
