@@ -1,3 +1,7 @@
 libopencm3
 u8glib
 m2tklib
+*.o
+*.d
+*.bin
+*.elf
