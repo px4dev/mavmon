@@ -4,6 +4,10 @@
 #include <u8g.h>
 #include <scmRTOS.h>
 
+/* initialiser list */
+extern unsigned long __ctors_start__;
+extern unsigned long __ctors_end__;
+
 /* process list, must match scmRTOS_PROCESS_COUNT */
 typedef OS::process<OS::pr0, 300> TProc1;
 typedef OS::process<OS::pr1, 300> TProc2;
@@ -25,6 +29,10 @@ int main(void)
 {
 	/* configure the board */
 	board_setup();
+
+	/* run constructors */
+	for (unsigned long *ctors = &__ctors_start__; ctors < &__ctors_end__; )
+	        ((void(*)(void))(*ctors++))();
 
 	/* and start the OS */
 	OS::run();
