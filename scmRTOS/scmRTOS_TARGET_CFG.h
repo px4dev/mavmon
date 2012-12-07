@@ -70,7 +70,7 @@
 //
 namespace OS
 {
-OS_INTERRUPT void SystemTimer_ISR();
+OS_INTERRUPT void sys_tick_handler();
 }
 
 #define  LOCK_SYSTEM_TIMER()    ( *CPU_SYSTICKCSR &= ~CPU_SYSTICKCSR_EINT )

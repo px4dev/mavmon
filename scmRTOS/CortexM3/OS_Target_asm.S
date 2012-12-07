@@ -86,12 +86,12 @@
 
     .extern os_context_switch_hook
 
-    .global PendSVC_ISR
+    .global pend_sv_handler
     .global os_start
 
 //-----------------------------------------------------------------------------
 //      HANDLE PendSV EXCEPTION
-//      void PendSVC_ISR(void)
+//      void pend_sv_handler(void)
 //
 // Note(s) : 1) PendSV is used to cause a context switch.  This is a recommended method for performing
 //              context switches with Cortex-M3.  This is because the Cortex-M3 auto-saves half of the
@@ -119,7 +119,7 @@
 //
 
 .thumb_func
-PendSVC_ISR:
+pend_sv_handler:
     CPSID   I                 // Prevent interruption during context switch
     MRS     R0, PSP           // PSP is process stack pointer
     STMDB   R0!, {R4-R11}     // Save remaining regs r4-11 on process stack

@@ -70,7 +70,7 @@ void TBaseProcess::init_stack_frame( stack_item_t * Stack
 }
 
 //------------------------------------------------------------------------------
-OS_INTERRUPT void OS::SystemTimer_ISR()
+OS_INTERRUPT void OS::sys_tick_handler()
 {
     scmRTOS_ISRW_TYPE ISR;
 
