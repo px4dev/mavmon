@@ -1,0 +1,37 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"file_exclude_patterns":
+			[
+			        "*.o",
+			        "*.a",
+			        "*.d",
+			        "*.sublime-project",
+			        "*.sublime-workspace"
+			],
+			"folder_exclude_patterns":
+			[
+			        ".git",
+			        ".hg"
+			]
+		}
+	],
+	"settings":
+	{
+		"tab_size": 8,
+		"translate_tabs_to_spaces": false
+	},
+	"build_systems":
+	[
+		{
+			"name": "mavmon",
+			"working_dir": "${project_path}",
+			"file_regex": "^(..[^:]*):([0-9]+):?([0-9]+)?:? (.*)$",
+			"cmd": ["make", "V=1"]
+		}
+	]
+
+
+}
