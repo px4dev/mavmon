@@ -239,7 +239,7 @@ static const uint8_t u8g_dev_init_seq[] = {
 
 	0xaf,			/* display on */
 	0x40,			/* display start line = 0 */
-	0xc0,			/* COM scan direction (normal) */
+	0xc8,			/* COM scan direction (reverse) */
 	0xa6,			/* normal display */
 	0xa0,			/* scan in normal direction */
 	0xa4,			/* clear display */
@@ -393,7 +393,7 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 			u8g_pb_t *pb = (u8g_pb_t *)(dev->dev_mem);
 
 			u8g_WriteEscSeqP(u8g, dev, u8g_dev_data_start);
-			u8g_WriteByte(u8g, dev, 0xb0 | (7 - pb->p.page));
+			u8g_WriteByte(u8g, dev, 0xb0 | pb->p.page);
 			u8g_SetAddress(u8g, dev, 1);
 
 			if (u8g_pb_WriteBuffer(pb, u8g, dev) == 0)
