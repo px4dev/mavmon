@@ -22,7 +22,7 @@ OS::TEventFlag TimerEvent;
 u8g_t u8g;
 
 void u8g_prepare(void) {
-  u8g_SetFont(&u8g, u8g_font_5x7);
+  u8g_SetFont(&u8g, u8g_font_6x10);
   u8g_SetFontRefHeightExtendedText(&u8g);
   u8g_SetDefaultForegroundColor(&u8g);
   u8g_SetFontPosTop(&u8g);

@@ -226,6 +226,44 @@ _write(int file, char *ptr, int len)
  * u8g interface drivers
  */
 
+#define WIDTH 128
+#define HEIGHT 64
+#define PAGE_HEIGHT 8
+
+static const uint8_t u8g_dev_init_seq[] = {
+	U8G_ESC_CS(0),		/* de-select display */
+	U8G_ESC_ADR(0),		/* instruction mode */
+	U8G_ESC_RST(1),		/* do reset low pulse with (1*16)+2 milliseconds */
+	U8G_ESC_DLY(1),		/* delay 1 ms after releasing reset */
+	U8G_ESC_CS(1),		/* select display */
+
+	0xaf,			/* display on */
+	0x40,			/* display start line = 0 */
+	0xc0,			/* COM scan direction (normal) */
+	0xa6,			/* normal display */
+	0xa0,			/* scan in normal direction */
+	0xa4,			/* clear display */
+	0xa2,			/* LCD bias = 1/9 */
+	0x2f,			/* Power control = all on */
+	0x23,			/* Rab Ratio  */
+	0x81, 0x25,		/* E-Vol setting */
+
+	U8G_ESC_DLY(100),	/* delay 100 ms */
+	0xa5,			/* all-pixels-on */
+	U8G_ESC_DLY(100),	/* delay 100 ms */
+	0xa4,			/* all-pixels-off */
+	U8G_ESC_CS(0),		/* disable chip */
+	U8G_ESC_END		/* end of sequence */
+};
+
+static const uint8_t u8g_dev_data_start[] = {
+	U8G_ESC_ADR(0),		/* instruction mode */
+	U8G_ESC_CS(1),		/* enable chip */
+	0x10,			/* set upper 4 bit of the col adr to 0 */
+	0x00,			/* set low 4 bits of the col adr to 0 */
+	U8G_ESC_END		/* end of sequence */
+};
+
 static uint8_t
 u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {
@@ -329,44 +367,6 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 	return 1;
 }
 
-#define WIDTH 128
-#define HEIGHT 64
-#define PAGE_HEIGHT 8
-
-static const uint8_t u8g_dev_init_seq[] = {
-	U8G_ESC_CS(0),		/* de-select display */
-	U8G_ESC_ADR(0),		/* instruction mode */
-	U8G_ESC_RST(1),		/* do reset low pulse with (1*16)+2 milliseconds */
-	U8G_ESC_DLY(1),		/* delay 1 ms after releasing reset */
-	U8G_ESC_CS(1),		/* select display */
-
-	0xaf,			/* display on */
-	0x40,			/* display start line = 0 */
-	0xc0,			/* COM scan direction (normal) */
-	0xa6,			/* normal display */
-	0xa1,
-	0xa4,			/* clear display */
-	0xa2,			/* LCD bias = 1/9 */
-	0x2f,			/* Power control = all on */
-	0x23,			/* Rab Ratio  */
-	0x81, 0x25,		/* E-Vol setting */
-
-	U8G_ESC_DLY(100),	/* delay 100 ms */
-	0xa5,			/* all-pixels-on */
-	U8G_ESC_DLY(100),	/* delay 100 ms */
-	0xa4,			/* all-pixels-off */
-	U8G_ESC_CS(0),		/* disable chip */
-	U8G_ESC_END		/* end of sequence */
-};
-
-static const uint8_t u8g_dev_data_start[] = {
-	U8G_ESC_ADR(0),		/* instruction mode */
-	U8G_ESC_CS(1),		/* enable chip */
-	0x10,			/* set upper 4 bit of the col adr to 0 */
-	0x00,			/* set lower 4 bit of the col adr to 0 */
-	U8G_ESC_END		/* end of sequence */
-};
-
 static uint8_t
 u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 {
@@ -375,6 +375,15 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 		//debug("u8dev: init");
 		u8g_InitCom(u8g, dev);
 		u8g_WriteEscSeqP(u8g, dev, u8g_dev_init_seq);
+
+		for (unsigned page = 0; page < (HEIGHT / PAGE_HEIGHT); page++) {
+			u8g_WriteEscSeqP(u8g, dev, u8g_dev_data_start);
+			u8g_WriteByte(u8g, dev, 0xb0 | page);
+			u8g_SetAddress(u8g, dev, 1);
+			for (unsigned column = 0; column < WIDTH; column++)
+				u8g_WriteByte(u8g, dev, 0);
+			u8g_SetChipSelect(u8g, dev, 0);			
+		}
 		break;
 
 	case U8G_DEV_MSG_STOP:
@@ -383,26 +392,14 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 	case U8G_DEV_MSG_PAGE_NEXT: {
 			u8g_pb_t *pb = (u8g_pb_t *)(dev->dev_mem);
 
-			u8g_SetAddress(u8g, dev, 0);				/* command mode */
-			u8g_SetChipSelect(u8g, dev, 1);				/* select display */
-			u8g_WriteByte(u8g, dev, 0xb0 + (pb->p.page & 0x7));	/* select current page */
-			u8g_WriteByte(u8g, dev, 0x00);				/* select column zero */
-			u8g_WriteByte(u8g, dev, 0x10);				/* select column zero */
-			u8g_WriteByte(u8g, dev, 0xaf);				/* display on */
-			u8g_SetAddress(u8g, dev, 1);				/* data mode */
-			u8g_pb_WriteBuffer(pb, u8g, dev);			/* write the page */
-			u8g_SetChipSelect(u8g, dev, 0);				/* deselect display */
-
-#if 0
 			u8g_WriteEscSeqP(u8g, dev, u8g_dev_data_start);
-			u8g_WriteByte(u8g, dev, 0xb0 | pb->p.page);	/* select current page (ST7565R) */
-			u8g_SetAddress(u8g, dev, 1);			/* data mode */
+			u8g_WriteByte(u8g, dev, 0xb0 | (7 - pb->p.page));
+			u8g_SetAddress(u8g, dev, 1);
 
 			if (u8g_pb_WriteBuffer(pb, u8g, dev) == 0)
 				return 0;
 
 			u8g_SetChipSelect(u8g, dev, 0);
-#endif
 		}
 		break;
 
