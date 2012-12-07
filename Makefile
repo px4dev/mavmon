@@ -3,7 +3,8 @@
 # Application sources
 #
 SRCS		 = main.cpp \
-		   board_fld_v2.c
+		   board.cpp \
+		   board_fld_v2.cpp
 INCDIRS		 =
 
 #

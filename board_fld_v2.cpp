@@ -1,16 +1,63 @@
+extern "C" {
 #include <libopencm3/stm32/f1/rcc.h>
 #include <libopencm3/stm32/f1/gpio.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/spi.h>
+}
 
 #include <stdio.h>
 #include <errno.h>
 
 #include "board.h"
 
-void
-board_setup(void)
+#define TX_BUFFER_SIZE	256
+#define RX_BUFFER_SIZE	256
+
+static uint8_t tx_buffer_bytes[256];
+static RingBuffer tx_buffer(tx_buffer_bytes, sizeof(tx_buffer_bytes));
+static uint8_t rx_buffer_bytes[256];
+static RingBuffer rx_buffer(rx_buffer_bytes, sizeof(rx_buffer_bytes));
+
+class Board_FLD_V2 : public Board
 {
+public:
+	Board_FLD_V2();
+
+	virtual void		setup();
+	virtual void		com_init(unsigned speed);
+	virtual void		com_fini();
+	virtual void		led_set(bool state);
+	virtual void		led_toggle();
+
+	void			com_rx(uint8_t c);
+	bool			com_tx(uint8_t &c);
+
+protected:
+	virtual void		com_tx_start(void);
+
+private:
+	uint8_t			_tx_buffer_bytes[TX_BUFFER_SIZE];
+	RingBuffer		_tx_buffer;
+	uint8_t			_rx_buffer_bytes[RX_BUFFER_SIZE];
+	RingBuffer		_rx_buffer;
+};
+
+static Board_FLD_V2 board_fld_v2;
+Board *gBoard = &board_fld_v2;
+
+Board_FLD_V2::Board_FLD_V2():
+	Board(&_tx_buffer, &_rx_buffer),
+	_tx_buffer(_tx_buffer_bytes, TX_BUFFER_SIZE),
+	_rx_buffer(_rx_buffer_bytes, RX_BUFFER_SIZE)
+{
+}
+
+void
+Board_FLD_V2::setup(void)
+{
+	gpio_set(GPIOA, GPIO11);
+
+	
 	/* configure for 12MHz crystal on the FLD_V2 board */
 	rcc_clock_setup_in_hse_12mhz_out_72mhz();
 
@@ -24,6 +71,7 @@ board_setup(void)
 
 	/* configure LED GPIO */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO11);
+	led_set(true);
 
 	/* configure buzzer GPIO and turn it off */
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO1);
@@ -59,22 +107,26 @@ board_setup(void)
 }
 
 void
-led_toggle()
+Board_FLD_V2::led_toggle()
 {
 	gpio_toggle(GPIOA, GPIO11);
 }
 
 void
-led_on()
+Board_FLD_V2::led_set(bool state)
 {
-	gpio_set(GPIOA, GPIO11);	
+	if (state) {
+		gpio_set(GPIOA, GPIO11);
+	} else {
+		gpio_clear(GPIOA, GPIO11);		
+	}
 }
 
 void
-serial_start(unsigned bitrate)
+Board_FLD_V2::com_init(unsigned speed)
 {
 	/* configure UART */
-	usart_set_baudrate(USART1, bitrate);
+	usart_set_baudrate(USART1, speed);
 	usart_set_databits(USART1, 8);
 	usart_set_stopbits(USART1, USART_STOPBITS_1);
 	usart_set_parity(USART1, USART_PARITY_NONE);
@@ -89,7 +141,7 @@ serial_start(unsigned bitrate)
 }
 
 void
-serial_stop(void)
+Board_FLD_V2::com_fini(void)
 {
 	usart_disable(USART1);
 	usart_disable_rx_interrupt(USART1);
@@ -97,23 +149,61 @@ serial_stop(void)
 }
 
 void
+Board_FLD_V2::com_tx_start()
+{
+	usart_enable_tx_interrupt(USART1);
+}
+
+void
+Board_FLD_V2::com_rx(uint8_t c)
+{
+	_rx_buffer.insert(c);
+
+	/* wake anyone that might be waiting */
+	_rx_data_avail.signal_isr();
+}
+
+bool
+Board_FLD_V2::com_tx(uint8_t &c)
+{
+	unsigned avail = _tx_buffer.contains();
+
+	/* if there is no more data to send, bail now */
+	if (avail == 0)
+		return false;
+
+	/*
+	 * Mitigate writer wakeup costs by only signalling that there is
+	 * more TX space when at least 8 bytes are free.
+	 */
+	if ((_tx_buffer.capacity() - avail) > 8)
+		_tx_space_avail.signal_isr();
+
+	/*
+	 * Get the byte we're going to send.
+	 */	
+	c = _tx_buffer.remove();
+	return true;
+}
+
+extern "C" void
 usart1_isr(void)
 {
-
 	/* receiver not empty? */
-	if (usart_get_flag(USART1, USART_SR_RXNE)) {
-		(void)usart_recv(USART1);
-
-		/* XXX do something with it here */
-	}
+	if (usart_get_flag(USART1, USART_SR_RXNE))
+		board_fld_v2.com_rx(usart_recv(USART1));
 
 	/* transmitter ready? */
 	if (usart_get_flag(USART1, USART_SR_TXE)) {
 
-		/* XXX transmit byte */
+		uint8_t c;
 
-		/* clear TX empty interrupt as we have no data */
-		usart_disable_tx_interrupt(USART1);
+		if (board_fld_v2.com_tx(c)) {
+			usart_send(USART1, c);
+		} else {
+			/* clear TX empty interrupt as we have no data */
+			usart_disable_tx_interrupt(USART1);			
+		}
 	}
 }
 
@@ -132,11 +222,11 @@ _write(int file, char *ptr, int len)
         return -1;
 }
 
-/*
+/****************************************************************************
  * u8g interface drivers
  */
 
-uint8_t
+static uint8_t
 u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {
 	switch(msg)
@@ -270,7 +360,8 @@ static const uint8_t u8g_dev_data_start[] = {
 	U8G_ESC_END		/* end of sequence */
 };
 
-uint8_t u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
+static uint8_t
+u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 {
 	switch(msg)
 	{

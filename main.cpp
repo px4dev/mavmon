@@ -22,7 +22,7 @@ OS::TEventFlag TimerEvent;
 u8g_t u8g;
 
 void u8g_prepare(void) {
-  u8g_SetFont(&u8g, u8g_font_6x10);
+  u8g_SetFont(&u8g, u8g_font_5x7);
   u8g_SetFontRefHeightExtendedText(&u8g);
   u8g_SetDefaultForegroundColor(&u8g);
   u8g_SetFontPosTop(&u8g);
@@ -94,16 +94,18 @@ void draw(void) {
 int 
 main(void)
 {
-	/* configure the board */
-	board_setup();
 
-	/* XXX debugging */
-	serial_start(115200);
-	debug("mavmon");
-
-	/* run constructors */
+	/* run constructors first */
 	for (unsigned long *ctors = &__ctors_start__; ctors < &__ctors_end__; )
 	        ((void(*)(void))(*ctors++))();
+
+	/* configure the board */
+	gBoard->setup();
+
+	/* XXX debugging */
+	gBoard->com_init(115200);
+	debug("mavmon");
+
 
 	/* and start the OS */
 	OS::run();
@@ -117,7 +119,7 @@ namespace OS
 		unsigned count = 0;
 		for (;;) {
 			if (count++ > 125) {
-				led_toggle();     /* LED on/off */
+				gBoard->led_toggle();     /* LED on/off */
 				count = 0;
 			}
 			TimerEvent.wait();
