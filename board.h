@@ -1,5 +1,5 @@
 
-#pragma once 
+#pragma once
 
 #include <u8g.h>
 #include <stdio.h>
@@ -51,7 +51,7 @@ public:
 	/**
 	 * Write data to the serial port.
 	 *
-	 * This function will block until the data has been queued for 
+	 * This function will block until the data has been queued for
 	 * transmission.
 	 *
 	 * @param data		Pointer to the data to write.
@@ -71,7 +71,7 @@ public:
 	/**
 	 * Check the serial port transmit buffer space.
 	 *
-	 * @return		The number of bytes that can be written 
+	 * @return		The number of bytes that can be written
 	 *			without blocking.
 	 */
 	int			com_write_space();
@@ -89,7 +89,7 @@ public:
 	 * @param state		The new LED state (true = on)
 	 */
 	virtual void		led_set(bool state);
-	
+
 	/**
 	 * Toggle the LED.
 	 */
@@ -123,8 +123,7 @@ public:
 		_buffer(buffer),
 		_size(size),
 		_head(0),
-		_tail(0)
-	{
+		_tail(0) {
 	}
 
 	unsigned		capacity() { return _size; }

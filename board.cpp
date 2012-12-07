@@ -56,8 +56,10 @@ unsigned
 RingBuffer::advance(unsigned index)
 {
 	index++;
+
 	if (index >= _size)
 		return 0;
+
 	return index;
 }
 
@@ -82,8 +84,10 @@ Board::com_write(const uint8_t *data, unsigned count)
 
 		if (avail > count)
 			avail = count;
+
 		while (avail--)
 			_com_tx_buf->insert(*data++);
+
 		count -= avail;
 		com_tx_start();
 	}
@@ -95,11 +99,13 @@ Board::com_read(uint8_t *data, unsigned size)
 	TCritSect cs;
 
 	unsigned avail = _com_rx_buf->contains();
+
 	if (avail > size)
 		avail = size;
 
 	for (unsigned i = 0; i < avail; i++)
 		data[i] = _com_rx_buf->remove();
+
 	return avail;
 }
 

@@ -57,17 +57,17 @@ Board_FLD_V2::setup(void)
 {
 	gpio_set(GPIOA, GPIO11);
 
-	
+
 	/* configure for 12MHz crystal on the FLD_V2 board */
 	rcc_clock_setup_in_hse_12mhz_out_72mhz();
 
 	/* turn on required clocks */
-	rcc_peripheral_enable_clock(&RCC_APB2ENR, 
-		RCC_APB2ENR_IOPAEN |
-		RCC_APB2ENR_IOPBEN |
-		RCC_APB2ENR_SPI1EN |
-		RCC_APB2ENR_AFIOEN |
-		RCC_APB2ENR_USART1EN);
+	rcc_peripheral_enable_clock(&RCC_APB2ENR,
+				    RCC_APB2ENR_IOPAEN |
+				    RCC_APB2ENR_IOPBEN |
+				    RCC_APB2ENR_SPI1EN |
+				    RCC_APB2ENR_AFIOEN |
+				    RCC_APB2ENR_USART1EN);
 
 	/* configure LED GPIO */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO11);
@@ -117,8 +117,9 @@ Board_FLD_V2::led_set(bool state)
 {
 	if (state) {
 		gpio_set(GPIOA, GPIO11);
+
 	} else {
-		gpio_clear(GPIOA, GPIO11);		
+		gpio_clear(GPIOA, GPIO11);
 	}
 }
 
@@ -181,7 +182,7 @@ Board_FLD_V2::com_tx(uint8_t &c)
 
 	/*
 	 * Get the byte we're going to send.
-	 */	
+	 */
 	c = _tx_buffer.remove();
 	return true;
 }
@@ -200,26 +201,28 @@ usart1_isr(void)
 
 		if (board_fld_v2.com_tx(c)) {
 			usart_send(USART1, c);
+
 		} else {
 			/* clear TX empty interrupt as we have no data */
-			usart_disable_tx_interrupt(USART1);			
+			usart_disable_tx_interrupt(USART1);
 		}
 	}
 }
 
-int 
+int
 _write(int file, char *ptr, int len)
 {
-        int i;
+	int i;
 
-        if (file == 1) {
-                for (i = 0; i < len; i++)
-                        usart_send_blocking(USART1, ptr[i]);
-                return i;
-        }
+	if (file == 1) {
+		for (i = 0; i < len; i++)
+			usart_send_blocking(USART1, ptr[i]);
 
-        errno = EIO;
-        return -1;
+		return i;
+	}
+
+	errno = EIO;
+	return -1;
 }
 
 /****************************************************************************
@@ -229,8 +232,7 @@ _write(int file, char *ptr, int len)
 static uint8_t
 u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 {
-	switch(msg)
-	{
+	switch (msg) {
 	case U8G_COM_MSG_INIT:
 		//debug("u8com: init");
 
@@ -248,7 +250,7 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 		 * SPI_Init(SPI1, &SPI_InitStructure);
 		 */
 		spi_init_master(
-			SPI1, 
+			SPI1,
 			SPI_CR1_BAUDRATE_FPCLK_DIV_2,	/* XXX need to scope this - maybe able to go to 2 */
 			SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE,
 			SPI_CR1_CPHA_CLK_TRANSITION_1,	/* want latch-on-rising */
@@ -269,11 +271,13 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 			//debug("u8com: data");
 			/* display data */
 			gpio_set(GPIOA, GPIO3);
+
 		} else {
 			//debug("u8com: command");
 			/* display command */
 			gpio_clear(GPIOA, GPIO3);
 		}
+
 		break;
 
 	case U8G_COM_MSG_CHIP_SELECT:
@@ -281,11 +285,13 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 			//debug("u8com: select");
 			/* select display */
 			gpio_clear(GPIOA, GPIO4);
+
 		} else {
 			//debug("u8com: deselect");
 			/* deselect display */
 			gpio_set(GPIOA, GPIO4);
 		}
+
 		break;
 
 	case U8G_COM_MSG_RESET:
@@ -293,11 +299,13 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 			//debug("u8com: clear reset");
 			/* set reset line high */
 			gpio_set(GPIOA, GPIO2);
+
 		} else {
 			//debug("u8com: assert reset");
 			/* set reset line low */
 			gpio_clear(GPIOA, GPIO2);
 		}
+
 		break;
 
 	case U8G_COM_MSG_WRITE_BYTE:
@@ -315,10 +323,12 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 				//debug("u8com:   0x%02x", *ptr);
 				spi_xfer(SPI1, *ptr++);
 			}
+
 			/* XXX wait for the last byte to finish transferring... */
 		}
 		break;
 	}
+
 	return 1;
 }
 
@@ -356,15 +366,14 @@ static const uint8_t u8g_dev_data_start[] = {
 	U8G_ESC_ADR(0),		/* instruction mode */
 	U8G_ESC_CS(1),		/* enable chip */
 	0x10,			/* set upper 4 bit of the col adr to 0 */
-	0x00,			/* set lower 4 bit of the col adr to 0 */      
+	0x00,			/* set lower 4 bit of the col adr to 0 */
 	U8G_ESC_END		/* end of sequence */
 };
 
 static uint8_t
 u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 {
-	switch(msg)
-	{
+	switch (msg) {
 	case U8G_DEV_MSG_INIT:
 		//debug("u8dev: init");
 		u8g_InitCom(u8g, dev);
@@ -374,8 +383,7 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 	case U8G_DEV_MSG_STOP:
 		break;
 
-	case U8G_DEV_MSG_PAGE_NEXT:
-		{
+	case U8G_DEV_MSG_PAGE_NEXT: {
 			u8g_pb_t *pb = (u8g_pb_t *)(dev->dev_mem);
 
 			u8g_SetAddress(u8g, dev, 0);				/* command mode */
@@ -392,8 +400,10 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 			u8g_WriteEscSeqP(u8g, dev, u8g_dev_data_start);
 			u8g_WriteByte(u8g, dev, 0xb0 | pb->p.page);	/* select current page (ST7565R) */
 			u8g_SetAddress(u8g, dev, 1);			/* data mode */
+
 			if (u8g_pb_WriteBuffer(pb, u8g, dev) == 0)
-			  	return 0;
+				return 0;
+
 			u8g_SetChipSelect(u8g, dev, 0);
 #endif
 		}
@@ -404,9 +414,10 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 		u8g_SetAddress(u8g, dev, 0);          /* instruction mode */
 		u8g_WriteByte(u8g, dev, 0x81);
 		u8g_WriteByte(u8g, dev, (*(uint8_t *)arg) >> 2);
-		u8g_SetChipSelect(u8g, dev, 0);      
+		u8g_SetChipSelect(u8g, dev, 0);
 		return 1;
 	}
+
 	return u8g_dev_pb8v1_base_fn(u8g, dev, msg, arg);
 }
 
