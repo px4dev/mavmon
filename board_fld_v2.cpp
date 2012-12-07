@@ -55,8 +55,6 @@ Board_FLD_V2::Board_FLD_V2():
 void
 Board_FLD_V2::setup(void)
 {
-	gpio_set(GPIOA, GPIO11);
-
 
 	/* configure for 12MHz crystal on the FLD_V2 board */
 	rcc_clock_setup_in_hse_12mhz_out_72mhz();
@@ -71,7 +69,6 @@ Board_FLD_V2::setup(void)
 
 	/* configure LED GPIO */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO11);
-	led_set(true);
 
 	/* configure buzzer GPIO and turn it off */
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO1);
