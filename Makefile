@@ -27,7 +27,6 @@ CXX		 = $(PREFIX)g++
 LD		 = $(PREFIX)g++
 OBJCOPY		 = $(PREFIX)objcopy
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3 -msoft-float
-STM32FLASH	 = ../stm32flash/stm32flash
 
 EXTRA_CFLAGS	 =
 EXTRA_DEFINES	 =
@@ -42,7 +41,6 @@ R		:= $(shell git clone $(LCM3_URL))
 endif
 LCM3_LIB	 = opencm3_stm32f1
 LCM3_TARGETS	 = stm32/f1
-LCM3_LD		 = $(LCM3)/lib/libopencm3_stm32f1.ld
 INCDIRS		+= $(LCM3)/include
 EXTRA_DEFINES	+= -DSTM32F1
 
@@ -96,6 +94,16 @@ R		:= $(shell hg clone $(M2TKLIB_URL))
 endif
 
 #
+# stm32flash
+#
+STM32FLASH	 = ./stm32flash
+STM32FLASH_URL	 = git://gitorious.org/stm32flash/stm32flash.git
+ifeq ($(wildcard $(STM32FLASH)),)
+R		:= $(shell git clone $(STM32FLASH_URL))
+endif
+UPLOADER	 = $(STM32FLASH)/stm32flash
+
+#
 # Build controls
 #
 OBJS		 = $(addsuffix .o,$(basename $(SRCS)))
@@ -138,19 +146,19 @@ ASFLAGS		 = $(ARCH_FLAGS) \
 		   -D__ASSEMBLER__
 
 LDSCRIPT	 = stm32f103rbt6.ld
-LDFLAGS		 = $(ARCH_FLAGS) \
+LDFLAGS		 = -l $(LCM3_LIB) \
 		   --static \
-		   -nostartfiles \
 		   -L $(LCM3)/lib \
-		   -L $(LCM3)/lib/stm32/f1 \
-		   -l $(LCM3_LIB) \
+		   -T $(LDSCRIPT) \
+		   -nostartfiles \
+		   -nostdlib \
 		   -Wl,--start-group \
-		   -lc -lgcc -lnosys \
+		   -lnosys -lc -lgcc \
 		   -Wl,--end-group \
 		   -Wl,--gc-sections \
-		   -T $(LDSCRIPT) \
-		   -T $(LCM3_LD) \
-		   -Wl,-Map=$(PRODUCT).map,--cref
+		   $(ARCH_FLAGS) \
+		   -Wl,-Map=$(PRODUCT).map,--cref \
+		   -v
 
 
 # Build debugging
@@ -164,9 +172,9 @@ endif
 PRODUCTS	 = $(addprefix $(PRODUCT),$(SUFFIXES))
 all: $(PRODUCTS)
 
-upload: $(PRODUCT).bin
+upload: $(PRODUCT).bin $(UPLOADER)
 	@echo UPLOAD $<
-	$(Q) $(STM32FLASH) -w $< $(UPLOAD_DEV)
+	$(Q) $(UPLOADER) -w $< $(UPLOAD_DEV)
 
 $(PRODUCT).elf: $(OBJS) $(LDSCRIPT) $(GLOBAL_DEPS) $(LCM3)
 	@echo LD $@
@@ -193,6 +201,9 @@ $(SRCS): $(LCM3)
 .PHONY: $(LCM3)
 $(LCM3):
 	$(Q) make -C $(LCM3) TARGETS=$(LCM3_TARGETS) lib
+
+$(UPLOADER):
+	$(Q) make -C $(STM32FLASH)
 
 .PHONY: clean
 clean:
