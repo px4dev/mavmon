@@ -1,8 +1,14 @@
 #include <u8g.h>
 
-extern void	board_setup(void);
-extern void	led_toggle(void);
-extern void	serial_start(unsigned bitrate);
-extern void	serial_stop(void);
+#ifdef __cplusplus
+# define EXTERN extern "C"
+#else
+# define EXTERN extern
+#endif
 
-extern u8g_dev_t u8g_board_dev;
+EXTERN void	board_setup(void);
+EXTERN void	led_toggle(void);
+EXTERN void	serial_start(unsigned bitrate);
+EXTERN void	serial_stop(void);
+
+EXTERN u8g_dev_t u8g_board_dev;

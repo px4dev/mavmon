@@ -1,8 +1,8 @@
 
 #
-# Sources
+# Application sources
 #
-SRCS		 = main.c \
+SRCS		 = main.cpp \
 		   board_fld_v2.c
 INCDIRS		 =
 
@@ -17,37 +17,20 @@ UPLOAD_DEV	 = /dev/cu.usbserial-00001114B
 PRODUCT		 = mavmon
 SUFFIXES	 = .bin .elf
 
-CFLAGS		 = $(ARCH_FLAGS) \
-		   -Os -g \
-		   -Wall -Wextra \
-		   -fno-common \
-		   -ffunction-sections -fdata-sections \
-		   -MD \
-		   $(addprefix -I,$(INCDIRS)) \
-		   -DSTM32F1
-
-LDSCRIPT	 = stm32f103rbt6.ld
-LDFLAGS		 = $(ARCH_FLAGS) \
-		   --static \
-		   -nostartfiles \
-		   -L $(LCM3)/lib \
-		   -L $(LCM3)/lib/stm32/f1 \
-		   -l $(LCM3_LIB) \
-		   -Wl,--start-group \
-		   -lc -lgcc -lnosys \
-		   -Wl,--end-group \
-		   -Wl,--gc-sections \
-		   -T $(LDSCRIPT) \
-		   -T $(LCM3_LD)
-
 #
 # Toolchain
 #
 PREFIX		 = arm-none-eabi-
 CC		 = $(PREFIX)gcc
+AS		 = $(PREFIX)gcc
+CXX		 = $(PREFIX)g++
+LD		 = $(PREFIX)g++
 OBJCOPY		 = $(PREFIX)objcopy
 ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3 -msoft-float
 STM32FLASH	 = ../stm32flash/stm32flash
+
+EXTRA_CFLAGS	 =
+EXTRA_DEFINES	 =
 
 #
 # libopencm3
@@ -61,6 +44,20 @@ LCM3_LIB	 = opencm3_stm32f1
 LCM3_TARGETS	 = stm32/f1
 LCM3_LD		 = $(LCM3)/lib/libopencm3_stm32f1.ld
 INCDIRS		+= $(LCM3)/include
+EXTRA_DEFINES	+= -DSTM32F1
+
+
+#
+# scmRTOS
+#
+SCMRTOS		 = ./scmRTOS
+SRCS		+= $(wildcard $(SCMRTOS)/Common/*.cpp) \
+		   $(wildcard $(SCMRTOS)/CortexM3/*.cpp) \
+		   $(wildcard $(SCMRTOS)/CortexM3/*.S)
+INCDIRS		+= $(SCMRTOS)/Common \
+		   $(SCMRTOS)/CortexM3 \
+		   $(SCMRTOS)
+EXTRA_DEFINES	+= -DSTM32F10X_MD
 
 #
 # U8glib
@@ -87,7 +84,7 @@ U8GLIB_SRCS	 = $(wildcard $(U8GLIB)/csrc/*.c)
 SRCS		+= $(filter-out $(U8GLIB_EXCLUDE),$(U8GLIB_SRCS))
 SRCS		+= $(wildcard $(U8GLIB)/sfntsrc/*.c)
 INCDIRS		+= $(U8GLIB)/csrc
-CFLAGS		+= -Wno-unused
+EXTRA_CFLAGS	+= -Wno-unused
 
 #
 # m2tklib
@@ -101,9 +98,60 @@ endif
 #
 # Build controls
 #
-OBJS		 = $(SRCS:.c=.o)
+OBJS		 = $(addsuffix .o,$(basename $(SRCS)))
 DEPS		 = $(OBJS:.o=.d)
 GLOBAL_DEPS	 = $(MAKEFILE_LIST)
+
+CFLAGS		 = $(ARCH_FLAGS) \
+		   -Os -g \
+		   -Wall -Wextra \
+		   -fno-common \
+		   -ffunction-sections -fdata-sections \
+		   -MD \
+		   $(addprefix -I,$(INCDIRS)) \
+		   $(EXTRA_DEFINES) \
+		   $(EXTRA_CFLAGS)
+
+CXXFLAGS	 = $(ARCH_FLAGS) \
+		   -Os -g \
+		   -Wall -Wextra \
+		   -fno-common \
+		   -ffunction-sections -fdata-sections \
+		   -fno-exceptions \
+		   -fno-rtti \
+		   -fno-threadsafe-statics \
+		   -funsigned-bitfields \
+		   -fshort-enums \
+		   -Wpointer-arith \
+		   -Wredundant-decls \
+		   -Wshadow \
+		   -Wcast-qual \
+		   -Wcast-align \
+		   -MD \
+		   $(addprefix -I,$(INCDIRS)) \
+		   -DSTM32F1 \
+		   $(EXTRA_CXXFLAGS)
+
+ASFLAGS		 = $(ARCH_FLAGS) \
+		   -g \
+		   $(addprefix -I,$(INCDIRS)) \
+		   -D__ASSEMBLER__
+
+LDSCRIPT	 = stm32f103rbt6.ld
+LDFLAGS		 = $(ARCH_FLAGS) \
+		   --static \
+		   -nostartfiles \
+		   -L $(LCM3)/lib \
+		   -L $(LCM3)/lib/stm32/f1 \
+		   -l $(LCM3_LIB) \
+		   -Wl,--start-group \
+		   -lc -lgcc -lnosys \
+		   -Wl,--end-group \
+		   -Wl,--gc-sections \
+		   -T $(LDSCRIPT) \
+		   -T $(LCM3_LD) \
+		   -Wl,-Map=$(PRODUCT).map,--cref
+
 
 # Build debugging
 ifeq ($(V),)
@@ -122,11 +170,19 @@ upload: $(PRODUCT).bin
 
 $(PRODUCT).elf: $(OBJS) $(LDSCRIPT) $(GLOBAL_DEPS) $(LCM3)
 	@echo LD $@
-	$(Q) $(CC) -o $@ $(OBJS) $(LDFLAGS)
+	$(Q) $(LD) -o $@ $(OBJS) $(LDFLAGS)
 
 %.o: %.c $(GLOBAL_DEPS)
 	@echo CC $@
 	$(Q) $(CC) $(CFLAGS) -o $@ -c $<
+
+%.o: %.cpp $(GLOBAL_DEPS)
+	@echo CXX $@
+	$(Q) $(CXX) $(CXXFLAGS) -o $@ -c $<
+
+%.o: %.S $(GLOBAL_DEPS)
+	@echo AS $@
+	$(Q) $(AS) $(ASFLAGS) -o $@ -c $<
 
 %.bin: %.elf
 	@echo BIN $@
@@ -140,7 +196,7 @@ $(LCM3):
 
 .PHONY: clean
 clean:
-	$(Q) rm -f $(OBJS) $(DEPS) $(PRODUCTS)
+	$(Q) rm -f $(OBJS) $(DEPS) $(PRODUCTS) $(PRODUCT).map
 
 .PHONY: reallyclean
 reallyclean: clean

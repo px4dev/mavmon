@@ -5,3 +5,5 @@ m2tklib
 *.d
 *.bin
 *.elf
+mavmon.map
+mavmon.sublime-workspace
