@@ -50,7 +50,19 @@ PRIVATE M2_ROOT (_top_return,		"f2",	"\x43",		&_top);
 
 PRIVATE M2_SPACE(_pad, "w8h1");
 
+/*
+ * The top menu of a menu tree.
+ */
+#define TOP_MENU(__name, __title, __elts...)				\
+	static const M2_LABEL(__name##_title, "f1", __title);		\
+	static M2_LIST(__name##_list) = { &__name##_title, __elts };	\
+	static const M2_VLIST(__name##_vlist, NULL, __name##_list);	\
+	const M2_ALIGN(__name, "-0|2W64H63", &__name##_vlist)
 
+
+/*
+ * A sub-menu that returns to the top menu.
+ */
 #define MENU(__name, __title, __elts...)					\
 	static const M2_LABEL(__name##_title, "f1", __title);			\
 	static M2_LIST(__name##_header_list) = {&_top_return, &_pad, &__name##_title}; \
@@ -58,13 +70,6 @@ PRIVATE M2_SPACE(_pad, "w8h1");
 	static M2_LIST(__name##_list) = { &__name##_header, __elts };		\
 	static const M2_VLIST(__name##_vlist, NULL, __name##_list);		\
 	static const M2_ALIGN(__name, "-0|2W64H63", &__name##_vlist)
-
-#define TOP_MENU(__name, __title, __elts...)				\
-	static const M2_LABEL(__name##_title, "f1", __title);		\
-	static M2_LIST(__name##_list) = { &__name##_title, __elts };	\
-	static const M2_VLIST(__name##_vlist, NULL, __name##_list);	\
-	const M2_ALIGN(__name, "-0|2W64H63", &__name##_vlist)
-
 
 
 /*
@@ -89,9 +94,13 @@ MENU(_radio, "Radio Setup",
 	&_radio_dummy);
 
 /*
- * Empty page with just a close widget.
+ * Empty page with just a back widget.
+ *
+ * Suitable for e.g. rendering stuff.
  */
-MENU(_empty, "");
+static M2_LIST(_empty_list) = {&_top_return};
+static const M2_VLIST(_empty_vlist, NULL, _empty_list);
+static const M2_ALIGN(_empty, "-0|2W64H63", &_empty_vlist);
 
 /*
  * Top-level menu.
