@@ -26,11 +26,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @file main.cpp
+ *
+ * Application startup logic.
+ */
+
+#include "mavmon.h"
 #include "board.h"
-
-#include <scmRTOS.h>
-
-#include <stdio.h>
 
 /* initialiser list */
 extern unsigned long __ctors_start__;

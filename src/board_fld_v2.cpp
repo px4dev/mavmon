@@ -457,13 +457,17 @@ m2_board_es(m2_p ep, uint8_t msg)
 {
 	switch (msg) {
 	case M2_ES_MSG_GET_KEY:
+
 		/* prefer select over direction keys */
 		if (!gpio_get(GPIOB, GPIO11))
 			return M2_KEY_SELECT;
+
 		if (!gpio_get(GPIOB, GPIO12))
 			return M2_KEY_PREV;
+
 		if (!gpio_get(GPIOB, GPIO10))
 			return M2_KEY_NEXT;
+
 		return M2_KEY_NONE;
 
 	case M2_ES_MSG_INIT:

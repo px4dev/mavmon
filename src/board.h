@@ -26,6 +26,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @file board.h
+ *
+ * Board interface definitions.
+ */
+
 #pragma once
 
 #include <u8g.h>

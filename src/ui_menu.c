@@ -27,7 +27,7 @@
  */
 
 /**
- * @file ui_menu.h
+ * @file ui_menu.c
  *
  * Menu tree for MAVmon.
  *

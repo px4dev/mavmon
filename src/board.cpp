@@ -26,6 +26,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+/**
+ * @file board.cpp
+ *
+ * Generic board-support code.
+ */
+
 #include "board.h"
 
 Board::Board(RingBuffer *com_tx_buf, RingBuffer *com_rx_buf) :

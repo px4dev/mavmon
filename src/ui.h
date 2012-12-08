@@ -32,6 +32,10 @@
  * User interface for MAVmon.
  */
 
+#pragma once
+
+#include <m2.h>
+
 /*
  * Top of the menu tree.
  */
