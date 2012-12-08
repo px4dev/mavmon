@@ -39,37 +39,14 @@
 
 #include "mavmon.h"
 #include "board.h"
+#include "ui.h"
 
 static u8g_t u8g;
 
 typedef OS::process<OS_PRIO_GUI, 1024> TUIProc;
 TUIProc UIProc;
 
-//=================================================
-// Forward declaration of the toplevel element
-M2_EXTERN_ALIGN(top_menu);
 
-//=================================================
-// Simple dialog: Input two values n1 and n2
-
-uint8_t n1 = 0;
-uint8_t n2 = 0;
-
-M2_LABEL(el_l1, NULL, "value 1:");
-M2_U8NUM(el_u1, "c2", 0, 99, &n1);
-M2_LABEL(el_l2, NULL, "value 2:");
-M2_U8NUM(el_u2, "c2", 0, 99, &n2);
-
-M2_LIST(list) = { &el_l1, &el_u1, &el_l2, &el_u2 };
-M2_GRIDLIST(el_gridlist, "c2", list);
-M2_ALIGN(top_menu, "-1|1W64H64", &el_gridlist);
-
-static void
-draw(void)
-{
-	/* call the m2 draw procedure */
-	m2_Draw();
-}
 
 namespace OS
 {
@@ -78,15 +55,16 @@ OS_PROCESS void TUIProc::exec()
 {
 	/* do u8g init */
 	u8g_Init(&u8g, &u8g_board_dev);
-	u8g_SetRot180(&u8g);
 
 	/* do m2 init */
-	m2_Init(&top_menu, 		/* UI root */
+	m2_Init(&_top, 			/* UI root */
 		m2_board_es,		/* event source */
 		m2_eh_4bd,		/* event handler */
 		m2_gh_u8g_bfs);		/* UI style */
 	m2_SetU8g(&u8g, m2_u8g_box_icon);
-	m2_SetFont(0, (const void *)u8g_font_5x8r);
+	m2_SetFont(0, (const void *)u8g_font_04b_03r);
+	m2_SetFont(1, (const void *)u8g_font_6x13);
+	m2_SetFont(2, (const void *)u8g_font_m2icon_7);
 
 	for (;;) {
 		m2_CheckKey();
@@ -96,12 +74,12 @@ OS_PROCESS void TUIProc::exec()
 			u8g_FirstPage(&u8g);
 
 			do {
-				draw();
+				m2_Draw();
 				m2_CheckKey();
 			} while (u8g_NextPage(&u8g));
 		}
 
-		sleep(100);
+		sleep(10);
 	}
 }
 }

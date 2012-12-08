@@ -8,7 +8,8 @@
 SRCS		 = src/main.cpp \
 		   src/board.cpp \
 		   src/board_fld_v2.cpp \
-		   src/ui.cpp
+		   src/ui.cpp \
+		   src/ui_menu.c
 INCDIRS		 = src
 
 #

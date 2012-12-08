@@ -275,9 +275,9 @@ static const uint8_t u8g_dev_init_seq[] = {
 
 	0xaf,			/* display on */
 	0x40,			/* display start line = 0 */
-	0xc8,			/* COM scan direction (reverse) */
+	0xc0,			/* COM scan direction (normal) */
 	0xa6,			/* normal display */
-	0xa0,			/* scan in normal direction */
+	0xa1,			/* scan in reverse direction */
 	0xa4,			/* clear display */
 	0xa2,			/* LCD bias = 1/9 */
 	0x2f,			/* Power control = all on */
@@ -296,7 +296,8 @@ static const uint8_t u8g_dev_data_start[] = {
 	U8G_ESC_ADR(0),		/* instruction mode */
 	U8G_ESC_CS(1),		/* enable chip */
 	0x10,			/* set upper 4 bit of the col adr to 0 */
-	0x00,			/* set low 4 bits of the col adr to 0 */
+	/* due to display orientation, the 'left' 4 columns are not visible */
+	0x04,			/* set low 4 bits of the col adr to 4 */
 	U8G_ESC_END		/* end of sequence */
 };
 
@@ -456,7 +457,14 @@ m2_board_es(m2_p ep, uint8_t msg)
 {
 	switch (msg) {
 	case M2_ES_MSG_GET_KEY:
-		return M2_KEY_NONE;	/* XXX for now */
+		/* prefer select over direction keys */
+		if (!gpio_get(GPIOB, GPIO11))
+			return M2_KEY_SELECT;
+		if (!gpio_get(GPIOB, GPIO12))
+			return M2_KEY_PREV;
+		if (!gpio_get(GPIOB, GPIO10))
+			return M2_KEY_NEXT;
+		return M2_KEY_NONE;
 
 	case M2_ES_MSG_INIT:
 		/* XXX nothing right now */

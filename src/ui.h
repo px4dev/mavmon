@@ -26,62 +26,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "board.h"
+/**
+ * @file ui.h
+ *
+ * User interface for MAVmon.
+ */
 
-#include <scmRTOS.h>
-
-#include <stdio.h>
-
-/* initialiser list */
-extern unsigned long __ctors_start__;
-extern unsigned long __ctors_end__;
-
-extern "C" int
-main(void)
-{
-	/* run constructors first */
-	for (unsigned long *ctors = &__ctors_start__; ctors < &__ctors_end__;)
-		((void( *)(void))(*ctors++))();
-
-	/* configure the board */
-	gBoard->setup();
-
-	/* XXX debugging */
-	gBoard->com_init(115200);
-	debug("mavmon");
-
-
-	/* and start the OS */
-	OS::run();
-}
-
-typedef OS::process<OS_PRIO_LED, 200> TLEDProc;
-TLEDProc LEDProc;
-
-namespace OS
-{
-TEventFlag TimerEvent;
-
-template <>
-OS_PROCESS void TLEDProc::exec()
-{
-	unsigned count = 0;
-
-	for (;;) {
-		if (count++ > 125) {
-			//gBoard->led_toggle();     /* LED on/off */
-			count = 0;
-		}
-
-		TimerEvent.wait();
-	}
-}
-
-void
-system_timer_user_hook()
-{
-	/* fire the timer event once per millisecond */
-	TimerEvent.signal_isr();
-}
-
-}
+/*
+ * Top of the menu tree.
+ */
+extern "C" { M2_EXTERN_ALIGN(_top); }
