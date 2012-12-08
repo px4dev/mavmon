@@ -1,3 +1,37 @@
+/*
+ * Copyright (c) 2012, px4dev, <px4@purgatory.org>
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * 
+ * o Redistributions of source code must retain the above copyright notice,
+ *   this list of conditions and the following disclaimer.
+ * 
+ * o Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/**
+ * @file board_fld_v2.cpp
+ *
+ * Board support for the FRSky FLD-V2 telemetry display.
+ */
+
 extern "C" {
 #include <libopencm3/stm32/f1/rcc.h>
 #include <libopencm3/stm32/f1/gpio.h>
@@ -184,9 +218,11 @@ Board_FLD_V2::com_tx(uint8_t &c)
 	return true;
 }
 
-extern "C" void
+OS_INTERRUPT void
 usart1_isr(void)
 {
+	OS::scmRTOS_ISRW_TYPE ISR;
+
 	/* receiver not empty? */
 	if (usart_get_flag(USART1, USART_SR_RXNE))
 		board_fld_v2.com_rx(usart_recv(USART1));
@@ -272,23 +308,11 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 		//debug("u8com: init");
 
 		/* configure SPI */
-		/*
-		 * SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-		 * SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-		 * SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-		 * SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
-		 * SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-		 * SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
-		 * SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
-		 * SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-		 * SPI_InitStructure.SPI_CRCPolynomial = 7;
-		 * SPI_Init(SPI1, &SPI_InitStructure);
-		 */
 		spi_init_master(
 			SPI1,
-			SPI_CR1_BAUDRATE_FPCLK_DIV_2,	/* XXX need to scope this - maybe able to go to 2 */
+			SPI_CR1_BAUDRATE_FPCLK_DIV_2,
 			SPI_CR1_CPOL_CLK_TO_1_WHEN_IDLE,
-			SPI_CR1_CPHA_CLK_TRANSITION_1,	/* want latch-on-rising */
+			SPI_CR1_CPHA_CLK_TRANSITION_1,
 			SPI_CR1_DFF_8BIT,
 			SPI_CR1_MSBFIRST);
 		spi_enable_software_slave_management(SPI1);
@@ -299,6 +323,7 @@ u8g_board_com_fn(u8g_t *u8g, uint8_t msg, uint8_t arg_val, void *arg_ptr)
 		break;
 
 	case U8G_COM_MSG_STOP:
+		spi_disable(SPI1);
 		break;
 
 	case U8G_COM_MSG_ADDRESS:

@@ -4,7 +4,8 @@
 #
 SRCS		 = main.cpp \
 		   board.cpp \
-		   board_fld_v2.cpp
+		   board_fld_v2.cpp \
+		   ui.cpp
 INCDIRS		 =
 
 #
@@ -158,9 +159,7 @@ LDFLAGS		 = -l $(LCM3_LIB) \
 		   -Wl,--end-group \
 		   -Wl,--gc-sections \
 		   $(ARCH_FLAGS) \
-		   -Wl,-Map=$(PRODUCT).map,--cref \
-		   -v
-
+		   -Wl,-Map=$(PRODUCT).map,--cref
 
 # Build debugging
 ifeq ($(V),)
