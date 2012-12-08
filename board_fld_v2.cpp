@@ -259,7 +259,7 @@ _write(int file, char *ptr, int len)
 }
 
 /****************************************************************************
- * u8g interface drivers
+ * u8g interface driver
  */
 
 #define WIDTH 128
@@ -444,3 +444,24 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 }
 
 U8G_PB_DEV(u8g_board_dev, WIDTH, HEIGHT, PAGE_HEIGHT, u8g_board_dev_fn, u8g_board_com_fn);
+
+/****************************************************************************
+ * m2 event source
+ *
+ * 3 buttons, but we really want 4 ...
+ */
+
+uint8_t
+m2_board_es(m2_p ep, uint8_t msg)
+{
+	switch(msg)
+	{
+	case M2_ES_MSG_GET_KEY:
+		return M2_KEY_NONE;	/* XXX for now */
+
+	case M2_ES_MSG_INIT:
+	  	/* XXX nothing right now */
+		break;
+	}
+	return 0;
+}

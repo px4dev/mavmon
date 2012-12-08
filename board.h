@@ -29,13 +29,15 @@
 #pragma once
 
 #include <u8g.h>
+#include <m2.h>
 
 #include "mavmon.h"
 
-/**
- * The board driver must export a u8glib driver structure.
+/*
+ * The board support code must export the u8g driver and m2 event sources.
  */
 EXTERN u8g_dev_t u8g_board_dev;
+EXTERN uint8_t m2_board_es(m2_p ep, uint8_t msg);
 
 class RingBuffer;
 class Board;

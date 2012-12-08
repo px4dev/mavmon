@@ -8,6 +8,8 @@
 			        "*.o",
 			        "*.a",
 			        "*.d",
+			        "*.bin",
+			        "*.elf",
 			        "*.sublime-project",
 			        "*.sublime-workspace"
 			],

@@ -33,118 +33,73 @@
  */
 
 #include <u8g.h>
+#include <m2.h>
+//#include <m2utl.h> /* doesn't seem necessary yet */
+#include <m2ghu8g.h>
 
 #include "mavmon.h"
 #include "board.h"
 
 static u8g_t u8g;
 
-void u8g_prepare(void)
-{
-	u8g_SetFont(&u8g, u8g_font_6x10);
-	u8g_SetFontRefHeightExtendedText(&u8g);
-	u8g_SetDefaultForegroundColor(&u8g);
-	u8g_SetFontPosTop(&u8g);
-}
-
-void u8g_box_frame(uint8_t a)
-{
-	u8g_DrawStr(&u8g, 0, 0, "drawBox");
-	u8g_DrawBox(&u8g, 5, 10, 20, 10);
-	u8g_DrawBox(&u8g, 10 + a, 15, 30, 7);
-	u8g_DrawStr(&u8g, 0, 30, "drawFrame");
-	u8g_DrawFrame(&u8g, 5, 10 + 30, 20, 10);
-	u8g_DrawFrame(&u8g, 10 + a, 15 + 30, 30, 7);
-}
-
-void u8g_string(uint8_t a)
-{
-	u8g_DrawStr(&u8g, 30 + a, 31, " 0");
-	u8g_DrawStr90(&u8g, 30, 31 + a, " 90");
-	u8g_DrawStr180(&u8g, 30 - a, 31, " 180");
-	u8g_DrawStr270(&u8g, 30, 31 - a, " 270");
-}
-
-void u8g_line(uint8_t a)
-{
-	u8g_DrawStr(&u8g, 0, 0, "drawLine");
-	u8g_DrawLine(&u8g, 7 + a, 10, 40, 55);
-	u8g_DrawLine(&u8g, 7 + a * 2, 10, 60, 55);
-	u8g_DrawLine(&u8g, 7 + a * 3, 10, 80, 55);
-	u8g_DrawLine(&u8g, 7 + a * 4, 10, 100, 55);
-}
-
-void u8g_ascii_1(void)
-{
-	char s[2] = " ";
-	uint8_t x, y;
-	u8g_DrawStr(&u8g, 0, 0, "ASCII page 1");
-
-	for (y = 0; y < 6; y++) {
-		for (x = 0; x < 16; x++) {
-			s[0] = y * 16 + x + 32;
-			u8g_DrawStr(&u8g, x * 7, y * 10 + 10, s);
-		}
-	}
-}
-
-void u8g_ascii_2(void)
-{
-	char s[2] = " ";
-	uint8_t x, y;
-	u8g_DrawStr(&u8g, 0, 0, "ASCII page 2");
-
-	for (y = 0; y < 6; y++) {
-		for (x = 0; x < 16; x++) {
-			s[0] = y * 16 + x + 160;
-			u8g_DrawStr(&u8g, x * 7, y * 10 + 10, s);
-		}
-	}
-}
-
-
-uint8_t draw_state = 0;
-
-void draw(void)
-{
-	u8g_prepare();
-
-	switch (draw_state >> 3) {
-	case 0: u8g_box_frame(draw_state & 7); break;
-
-	case 1: u8g_string(draw_state & 7); break;
-
-	case 2: u8g_line(draw_state & 7); break;
-
-	case 3: u8g_ascii_1(); break;
-
-	case 4: u8g_ascii_2(); break;
-	}
-}
-
 typedef OS::process<OS_PRIO_GUI, 1024> TUIProc;
 TUIProc UIProc;
+
+//=================================================
+// Forward declaration of the toplevel element
+M2_EXTERN_ALIGN(top_menu);
+
+//=================================================
+// Simple dialog: Input two values n1 and n2
+
+uint8_t n1 = 0;
+uint8_t n2 = 0;
+
+M2_LABEL(el_l1, NULL, "value 1:");
+M2_U8NUM(el_u1, "c2", 0, 99, &n1);
+M2_LABEL(el_l2, NULL, "value 2:");
+M2_U8NUM(el_u2, "c2", 0, 99, &n2);
+
+M2_LIST(list) = { &el_l1, &el_u1, &el_l2, &el_u2 };
+M2_GRIDLIST(el_gridlist, "c2", list);
+M2_ALIGN(top_menu, "-1|1W64H64", &el_gridlist);
+
+static void
+draw(void)
+{
+	/* call the m2 draw procedure */
+	m2_Draw();
+}
 
 namespace OS
 {
 template <>
 OS_PROCESS void TUIProc::exec()
 {
+	/* do u8g init */
 	u8g_Init(&u8g, &u8g_board_dev);
 	u8g_SetRot180(&u8g);
-	u8g_SetColorIndex(&u8g, 1);		/* pixel on */
+
+	/* do m2 init */
+	m2_Init(&top_menu, 		/* UI root */
+		m2_board_es,		/* event source */
+		m2_eh_4bd,		/* event handler */
+		m2_gh_u8g_bfs);		/* UI style */
+	m2_SetU8g(&u8g, m2_u8g_box_icon);
+	m2_SetFont(0, (const void *)u8g_font_5x8r);
 
 	for (;;) {
-		u8g_FirstPage(&u8g);
+		m2_CheckKey();
 
-		do {
-			draw();
-		} while (u8g_NextPage(&u8g));
+		if (m2_HandleKey()) {
+			/* picture loop */
+			u8g_FirstPage(&u8g);
 
-		draw_state++;
-
-		if (draw_state >= 5 * 8)
-			draw_state = 0;
+			do {
+				draw();
+				m2_CheckKey();
+			} while (u8g_NextPage(&u8g));
+		}
 
 		sleep(100);
 	}

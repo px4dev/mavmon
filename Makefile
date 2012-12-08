@@ -94,6 +94,11 @@ M2TKLIB_URL	 = https://code.google.com/p/m2tklib/
 ifeq ($(wildcard $(M2TKLIB)),)
 R		:= $(shell hg clone $(M2TKLIB_URL))
 endif
+SRCS		+= $(wildcard \
+			$(M2TKLIB)/src/*.c \
+			$(M2TKLIB)/dev/u8glib/*.c)
+INCDIRS		+= $(M2TKLIB)/src \
+		   $(M2TKLIB)/dev/u8glib
 
 #
 # stm32flash
