@@ -136,6 +136,23 @@ protected:
 	 */
 	virtual void		com_tx_start(void);
 
+	/**
+	 * Called by the board-specific subclass to add a byte
+	 * to the receive buffer.
+	 *
+	 * @param c		The received byte.
+	 */
+	void			com_rx(uint8_t c);
+
+	/**
+	 * Called by the board-specific subclass when it wants a
+	 * byte to transmit.
+	 *
+	 * @param c		The byte to send.
+	 * @return		True if a byte was returned.
+	 */
+	bool			com_tx(uint8_t &c);
+
 private:
 
 };

@@ -102,6 +102,39 @@ void Board::com_fini() {}
 void Board::com_tx_start(void) {}
 
 void
+Board::com_rx(uint8_t c)
+{
+	_com_rx_buf->insert(c);
+
+	/* wake anyone that might be waiting */
+	_rx_data_avail.signal_isr();
+}
+
+bool
+Board::com_tx(uint8_t &c)
+{
+	unsigned avail = _com_tx_buf->contains();
+
+	/* if there is no more data to send, bail now */
+	if (avail == 0)
+		return false;
+
+	/*
+	 * Mitigate writer wakeup costs by only signalling that there is
+	 * more TX space when at least 8 bytes are free.
+	 */
+	if ((_com_tx_buf->capacity() - avail) > 8)
+		_tx_space_avail.signal_isr();
+
+	/*
+	 * Get the byte we're going to send.
+	 */
+	c = _com_tx_buf->remove();
+	return true;
+}
+
+
+void
 Board::com_write(const uint8_t *data, unsigned count)
 {
 	TCritSect cs;

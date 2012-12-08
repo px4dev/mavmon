@@ -52,6 +52,8 @@ static RingBuffer tx_buffer(tx_buffer_bytes, sizeof(tx_buffer_bytes));
 static uint8_t rx_buffer_bytes[256];
 static RingBuffer rx_buffer(rx_buffer_bytes, sizeof(rx_buffer_bytes));
 
+extern "C" void usart1_isr(void);
+
 class Board_FLD_V2 : public Board
 {
 public:
@@ -63,10 +65,8 @@ public:
 	virtual void		led_set(bool state);
 	virtual void		led_toggle();
 
-	void			com_rx(uint8_t c);
-	bool			com_tx(uint8_t &c);
-
 protected:
+
 	virtual void		com_tx_start(void);
 
 private:
@@ -74,6 +74,8 @@ private:
 	RingBuffer		_tx_buffer;
 	uint8_t			_rx_buffer_bytes[RX_BUFFER_SIZE];
 	RingBuffer		_rx_buffer;
+
+	friend void		usart1_isr(void);
 };
 
 static Board_FLD_V2 board_fld_v2;
@@ -184,38 +186,6 @@ void
 Board_FLD_V2::com_tx_start()
 {
 	usart_enable_tx_interrupt(USART1);
-}
-
-void
-Board_FLD_V2::com_rx(uint8_t c)
-{
-	_rx_buffer.insert(c);
-
-	/* wake anyone that might be waiting */
-	_rx_data_avail.signal_isr();
-}
-
-bool
-Board_FLD_V2::com_tx(uint8_t &c)
-{
-	unsigned avail = _tx_buffer.contains();
-
-	/* if there is no more data to send, bail now */
-	if (avail == 0)
-		return false;
-
-	/*
-	 * Mitigate writer wakeup costs by only signalling that there is
-	 * more TX space when at least 8 bytes are free.
-	 */
-	if ((_tx_buffer.capacity() - avail) > 8)
-		_tx_space_avail.signal_isr();
-
-	/*
-	 * Get the byte we're going to send.
-	 */
-	c = _tx_buffer.remove();
-	return true;
 }
 
 OS_INTERRUPT void
