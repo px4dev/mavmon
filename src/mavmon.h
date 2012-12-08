@@ -50,3 +50,8 @@
  */
 #define OS_PRIO_LED	OS::pr0
 #define OS_PRIO_GUI	OS::pr1
+
+/*
+ * Compiler niceties
+ */
+#define __unused	__attribute__((unused))

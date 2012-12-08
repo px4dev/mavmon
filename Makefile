@@ -1,12 +1,15 @@
+#
+# Build the mavmon application.
+#
 
 #
 # Application sources
 #
-SRCS		 = main.cpp \
-		   board.cpp \
-		   board_fld_v2.cpp \
-		   ui.cpp
-INCDIRS		 =
+SRCS		 = src/main.cpp \
+		   src/board.cpp \
+		   src/board_fld_v2.cpp \
+		   src/ui.cpp
+INCDIRS		 = src
 
 #
 # Serial device
@@ -34,23 +37,9 @@ EXTRA_CFLAGS	 =
 EXTRA_DEFINES	 =
 
 #
-# libopencm3
-#
-LCM3		 = ./libopencm3
-LCM3_URL	 = https://github.com/libopencm3/libopencm3.git
-ifeq ($(wildcard $(LCM3)),)
-R		:= $(shell git clone $(LCM3_URL))
-endif
-LCM3_LIB	 = opencm3_stm32f1
-LCM3_TARGETS	 = stm32/f1
-INCDIRS		+= $(LCM3)/include
-EXTRA_DEFINES	+= -DSTM32F1
-
-
-#
 # scmRTOS
 #
-SCMRTOS		 = ./scmRTOS
+SCMRTOS		 = scmRTOS
 SRCS		+= $(wildcard $(SCMRTOS)/Common/*.cpp) \
 		   $(wildcard $(SCMRTOS)/CortexM3/*.cpp) \
 		   $(wildcard $(SCMRTOS)/CortexM3/*.S)
@@ -60,60 +49,89 @@ INCDIRS		+= $(SCMRTOS)/Common \
 EXTRA_DEFINES	+= -DSTM32F10X_MD
 
 #
+# External projects
+#
+ifeq ($(wildcard $(ext)),)
+R		:= $(shell mkdir -p ext)
+endif
+
+
+#
+# libopencm3
+#
+LCM3		 = ext/libopencm3
+LCM3_URL	 = https://github.com/libopencm3/libopencm3.git
+ifeq ($(wildcard $(LCM3)),)
+$(info FETCH libopencm3)
+R		:= $(shell cd ext && git clone $(LCM3_URL))
+endif
+LCM3_LIB	 = opencm3_stm32f1
+LCM3_TARGETS	 = stm32/f1
+INCDIRS		+= $(LCM3)/include
+EXTRA_DEFINES	+= -DSTM32F1
+
+#
 # U8glib
 #
-U8GLIB		 = ./u8glib
-U8GLIB_URL	 = https://code.google.com/p/u8glib/
-ifeq ($(wildcard $(U8GLIB)),)
-R		:= $(shell hg clone $(U8GLIB_URL))
+U8G		 = ext/u8glib
+U8G_URL		 = https://code.google.com/p/u8glib/
+ifeq ($(wildcard $(U8G)),)
+$(info FETCH u8g)
+R		:= $(shell mkdir -p ext)
+R		:= $(shell cd ext && hg clone $(U8G_URL))
 endif
-U8GLIB_EXCLUDE	 = $(U8GLIB)/csrc/chessengine.c \
-		   $(U8GLIB)/csrc/u8g_com_api_16% \
-		   $(U8GLIB)/csrc/u8g_com_arduino% \
-		   $(U8GLIB)/csrc/u8g_com_atmega% \
-		   $(U8GLIB)/csrc/u8g_com_i2c% \
-		   $(U8GLIB)/csrc/u8g_com_io% \
-		   $(U8GLIB)/csrc/u8g_com_null% \
-		   $(U8GLIB)/csrc/u8g_delay.c \
-		   $(U8GLIB)/csrc/u8g_dev_% \
-		   $(U8GLIB)/csrc/u8g_pb14% \
-		   $(U8GLIB)/csrc/u8g_pb16% \
-		   $(U8GLIB)/csrc/u8g_pb8h% \
-		   $(U8GLIB)/csrc/u8g_pb8v2%
-U8GLIB_SRCS	 = $(wildcard $(U8GLIB)/csrc/*.c)
-SRCS		+= $(filter-out $(U8GLIB_EXCLUDE),$(U8GLIB_SRCS))
-SRCS		+= $(wildcard $(U8GLIB)/sfntsrc/*.c)
-INCDIRS		+= $(U8GLIB)/csrc
+U8G_EXCLUDE	 = $(U8G)/csrc/chessengine.c \
+		   $(U8G)/csrc/u8g_com_api_16% \
+		   $(U8G)/csrc/u8g_com_arduino% \
+		   $(U8G)/csrc/u8g_com_atmega% \
+		   $(U8G)/csrc/u8g_com_i2c% \
+		   $(U8G)/csrc/u8g_com_io% \
+		   $(U8G)/csrc/u8g_com_null% \
+		   $(U8G)/csrc/u8g_delay.c \
+		   $(U8G)/csrc/u8g_dev_% \
+		   $(U8G)/csrc/u8g_pb14% \
+		   $(U8G)/csrc/u8g_pb16% \
+		   $(U8G)/csrc/u8g_pb8h% \
+		   $(U8G)/csrc/u8g_pb8v2%
+U8G_SRCS	 = $(wildcard $(U8G)/csrc/*.c)
+SRCS		+= $(filter-out $(U8G_EXCLUDE),$(U8G_SRCS))
+SRCS		+= $(wildcard $(U8G)/sfntsrc/*.c)
+INCDIRS		+= $(U8G)/csrc
 EXTRA_CFLAGS	+= -Wno-unused
 
 #
 # m2tklib
 #
-M2TKLIB		 = ./m2tklib
-M2TKLIB_URL	 = https://code.google.com/p/m2tklib/
-ifeq ($(wildcard $(M2TKLIB)),)
-R		:= $(shell hg clone $(M2TKLIB_URL))
+M2TK		 = ext/m2tklib
+M2TK_URL	 = https://code.google.com/p/m2tklib/
+ifeq ($(wildcard $(M2TK)),)
+$(info FETCH m2tk)
+R		:= $(shell cd ext && hg clone $(M2TK_URL))
 endif
-SRCS		+= $(wildcard \
-			$(M2TKLIB)/src/*.c \
-			$(M2TKLIB)/dev/u8glib/*.c)
-INCDIRS		+= $(M2TKLIB)/src \
-		   $(M2TKLIB)/dev/u8glib
+M2TK_EXCLUDE	 = $(M2TK)/src/mas%
+M2TK_SRCS	+= $(wildcard \
+			$(M2TK)/src/*.c \
+			$(M2TK)/dev/u8glib/*.c)
+SRCS		+= $(filter-out $(M2TK_EXCLUDE),$(M2TK_SRCS))
+INCDIRS		+= $(M2TK)/src \
+		   $(M2TK)/dev/u8glib
 
 #
 # stm32flash
 #
-STM32FLASH	 = ./stm32flash
+STM32FLASH	 = ext/stm32flash
 STM32FLASH_URL	 = git://gitorious.org/stm32flash/stm32flash.git
 ifeq ($(wildcard $(STM32FLASH)),)
-R		:= $(shell git clone $(STM32FLASH_URL))
+$(info FETCH stm32flash)
+R		:= $(shell cd ext && git clone $(STM32FLASH_URL))
 endif
 UPLOADER	 = $(STM32FLASH)/stm32flash
 
 #
 # Build controls
 #
-OBJS		 = $(addsuffix .o,$(basename $(SRCS)))
+BUILDDIR	 = build
+OBJS		 = $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(basename $(SRCS))))
 DEPS		 = $(OBJS:.o=.d)
 GLOBAL_DEPS	 = $(MAKEFILE_LIST)
 
@@ -164,7 +182,7 @@ LDFLAGS		 = -l $(LCM3_LIB) \
 		   -Wl,--end-group \
 		   -Wl,--gc-sections \
 		   $(ARCH_FLAGS) \
-		   -Wl,-Map=$(PRODUCT).map,--cref
+		   -Wl,-Map=$(BUILDDIR)/$(PRODUCT).map,--cref
 
 # Build debugging
 ifeq ($(V),)
@@ -174,31 +192,34 @@ endif
 #
 # Rules
 #
-PRODUCTS	 = $(addprefix $(PRODUCT),$(SUFFIXES))
+PRODUCTS	 = $(addprefix $(BUILDDIR)/$(PRODUCT),$(SUFFIXES))
 all: $(PRODUCTS)
 
-upload: $(PRODUCT).bin $(UPLOADER)
+upload: $(BUILDDIR)/$(PRODUCT).bin $(UPLOADER)
 	@echo UPLOAD $<
 	$(Q) $(UPLOADER) -w $< $(UPLOAD_DEV)
 
-$(PRODUCT).elf: $(OBJS) $(LDSCRIPT) $(GLOBAL_DEPS) $(LCM3)
-	@echo LD $@
+$(BUILDDIR)/$(PRODUCT).elf: $(OBJS) $(LDSCRIPT) $(GLOBAL_DEPS) $(LCM3)
+	@echo LD $(notdir $@)
 	$(Q) $(LD) -o $@ $(OBJS) $(LDFLAGS)
 
-%.o: %.c $(GLOBAL_DEPS)
-	@echo CC $@
+$(BUILDDIR)/%.o: %.c $(GLOBAL_DEPS)
+	@echo CC $(notdir $@)
+	@mkdir -p $(dir $@)
 	$(Q) $(CC) $(CFLAGS) -o $@ -c $<
 
-%.o: %.cpp $(GLOBAL_DEPS)
-	@echo CXX $@
+$(BUILDDIR)/%.o: %.cpp $(GLOBAL_DEPS)
+	@echo CXX $(notdir $@)
+	@mkdir -p $(dir $@)
 	$(Q) $(CXX) $(CXXFLAGS) -o $@ -c $<
 
-%.o: %.S $(GLOBAL_DEPS)
-	@echo AS $@
+$(BUILDDIR)/%.o: %.S $(GLOBAL_DEPS)
+	@echo AS $(notdir $@)
+	@mkdir -p $(dir $@)
 	$(Q) $(AS) $(ASFLAGS) -o $@ -c $<
 
 %.bin: %.elf
-	@echo BIN $@
+	@echo BIN $(notdir $@)
 	$(Q) $(OBJCOPY) -O binary $^ $@
 
 $(SRCS): $(LCM3)
@@ -212,7 +233,7 @@ $(UPLOADER):
 
 .PHONY: clean
 clean:
-	$(Q) rm -f $(OBJS) $(DEPS) $(PRODUCTS) $(PRODUCT).map
+	$(Q) rm -rf $(BUILDDIR)
 
 .PHONY: reallyclean
 reallyclean: clean

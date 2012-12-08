@@ -91,7 +91,7 @@ RingBuffer::advance(unsigned index)
 }
 
 void Board::setup(void) {}
-void Board::com_init(unsigned speed) {}
+void Board::com_init(unsigned speed __unused) {}
 void Board::com_fini() {}
 void Board::com_tx_start(void) {}
 
@@ -148,5 +148,5 @@ Board::com_read_available()
 	return _com_rx_buf->contains();
 }
 
-void Board::led_set(bool state) {}
+void Board::led_set(bool state __unused) {}
 void Board::led_toggle() {}

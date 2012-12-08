@@ -454,14 +454,14 @@ U8G_PB_DEV(u8g_board_dev, WIDTH, HEIGHT, PAGE_HEIGHT, u8g_board_dev_fn, u8g_boar
 uint8_t
 m2_board_es(m2_p ep, uint8_t msg)
 {
-	switch(msg)
-	{
+	switch (msg) {
 	case M2_ES_MSG_GET_KEY:
 		return M2_KEY_NONE;	/* XXX for now */
 
 	case M2_ES_MSG_INIT:
-	  	/* XXX nothing right now */
+		/* XXX nothing right now */
 		break;
 	}
+
 	return 0;
 }
