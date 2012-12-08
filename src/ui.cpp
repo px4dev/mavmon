@@ -79,7 +79,7 @@ OS_PROCESS void TUIProc::exec()
 			} while (u8g_NextPage(&u8g));
 		}
 
-		sleep(10);
+		sleep(100);
 	}
 }
 }

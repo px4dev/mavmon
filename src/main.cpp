@@ -69,7 +69,7 @@ OS_PROCESS void TLEDProc::exec()
 
 	for (;;) {
 		if (count++ > 125) {
-			//gBoard->led_toggle();     /* LED on/off */
+			gBoard->led_toggle();     /* LED on/off */
 			count = 0;
 		}
 
