@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2012, px4dev, <px4@purgatory.org>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  * o Redistributions of source code must retain the above copyright notice,
  *   this list of conditions and the following disclaimer.
- * 
+ *
  * o Redistributions in binary form must reproduce the above copyright
  *   notice, this list of conditions and the following disclaimer in the
  *   documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -405,10 +405,13 @@ u8g_board_dev_fn(u8g_t *u8g, u8g_dev_t *dev, uint8_t msg, void *arg)
 			u8g_WriteEscSeqP(u8g, dev, u8g_dev_data_start);
 			u8g_WriteByte(u8g, dev, 0xb0 | page);
 			u8g_SetAddress(u8g, dev, 1);
+
 			for (unsigned column = 0; column < WIDTH; column++)
 				u8g_WriteByte(u8g, dev, 0);
-			u8g_SetChipSelect(u8g, dev, 0);			
+
+			u8g_SetChipSelect(u8g, dev, 0);
 		}
+
 		break;
 
 	case U8G_DEV_MSG_STOP:

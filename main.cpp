@@ -77,7 +77,7 @@ OS_PROCESS void TLEDProc::exec()
 	}
 }
 
-void 
+void
 system_timer_user_hook()
 {
 	/* fire the timer event once per millisecond */
