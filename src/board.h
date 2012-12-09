@@ -45,9 +45,7 @@
 EXTERN u8g_dev_t u8g_board_dev;
 EXTERN uint8_t m2_board_es(m2_p ep, uint8_t msg);
 
-class RingBuffer;
 class Board;
-
 extern Board	*gBoard;
 
 /**
@@ -56,7 +54,7 @@ extern Board	*gBoard;
 class Board
 {
 public:
-	Board(RingBuffer *com_tx_buf, RingBuffer *com_rx_buf);
+	Board(uint8_t *tx_buf, unsigned tx_buf_size, uint8_t *rx_buf, unsigned rx_buf_size);
 
 	/**
 	 * Perform pre-constructor board initialisation.
@@ -122,11 +120,7 @@ public:
 	 */
 	virtual void		led_toggle();
 
-
 protected:
-	RingBuffer		*_com_tx_buf;
-	RingBuffer		*_com_rx_buf;
-
 	OS::TEventFlag		_tx_space_avail;
 	OS::TEventFlag		_rx_data_avail;
 
@@ -154,33 +148,35 @@ protected:
 	bool			com_tx(uint8_t &c);
 
 private:
+	/**
+	 * Simple ring buffer for serial etc. comms.
+	 */
+	class RingBuffer
+	{
+	public:
+		RingBuffer(uint8_t *buffer, unsigned size) :
+			_buffer(buffer),
+			_size(size),
+			_head(0),
+			_tail(0) {
+		}
 
-};
+		unsigned		capacity() { return _size; }
+		unsigned		free();
+		unsigned		contains();
+		void			insert(uint8_t c);
+		uint8_t			remove();
 
-/**
- * Simple ring buffer for serial etc. comms.
- */
-class RingBuffer
-{
-public:
-	RingBuffer(uint8_t *buffer, unsigned size) :
-		_buffer(buffer),
-		_size(size),
-		_head(0),
-		_tail(0) {
-	}
+	private:
+		uint8_t			*_buffer;
+		unsigned		_size;
+		volatile unsigned	_head;
+		volatile unsigned	_tail;
 
-	unsigned		capacity() { return _size; }
-	unsigned		free();
-	unsigned		contains();
-	void			insert(uint8_t c);
-	uint8_t			remove();
+		unsigned		advance(unsigned index);
+	};
 
-private:
-	uint8_t			*_buffer;
-	unsigned		_size;
-	volatile unsigned	_head;
-	volatile unsigned	_tail;
 
-	unsigned		advance(unsigned index);
+	RingBuffer		_com_tx_buf;
+	RingBuffer		_com_rx_buf;
 };

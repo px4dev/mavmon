@@ -44,13 +44,8 @@ extern "C" {
 
 #include "board.h"
 
-#define TX_BUFFER_SIZE	256
-#define RX_BUFFER_SIZE	256
-
-static uint8_t tx_buffer_bytes[256];
-static RingBuffer tx_buffer(tx_buffer_bytes, sizeof(tx_buffer_bytes));
-static uint8_t rx_buffer_bytes[256];
-static RingBuffer rx_buffer(rx_buffer_bytes, sizeof(rx_buffer_bytes));
+static uint8_t com_tx_buffer[256];
+static uint8_t com_rx_buffer[256];
 
 extern "C" void usart1_isr(void);
 
@@ -70,11 +65,6 @@ protected:
 	virtual void		com_tx_start(void);
 
 private:
-	uint8_t			_tx_buffer_bytes[TX_BUFFER_SIZE];
-	RingBuffer		_tx_buffer;
-	uint8_t			_rx_buffer_bytes[RX_BUFFER_SIZE];
-	RingBuffer		_rx_buffer;
-
 	friend void		usart1_isr(void);
 };
 
@@ -82,9 +72,8 @@ static Board_FLD_V2 board_fld_v2;
 Board *gBoard = &board_fld_v2;
 
 Board_FLD_V2::Board_FLD_V2():
-	Board(&_tx_buffer, &_rx_buffer),
-	_tx_buffer(_tx_buffer_bytes, TX_BUFFER_SIZE),
-	_rx_buffer(_rx_buffer_bytes, RX_BUFFER_SIZE)
+	Board(com_tx_buffer, sizeof(com_tx_buffer),
+		com_rx_buffer, sizeof(com_rx_buffer))
 {
 }
 
@@ -245,9 +234,9 @@ static const uint8_t u8g_dev_init_seq[] = {
 
 	0xaf,			/* display on */
 	0x40,			/* display start line = 0 */
-	0xc0,			/* COM scan direction (normal) */
+	0xc8,			/* COM scan direction (reverse) */
 	0xa6,			/* normal display */
-	0xa1,			/* scan in reverse direction */
+	0xa0,			/* scan in normal direction */
 	0xa4,			/* clear display */
 	0xa2,			/* LCD bias = 1/9 */
 	0x2f,			/* Power control = all on */
@@ -266,8 +255,7 @@ static const uint8_t u8g_dev_data_start[] = {
 	U8G_ESC_ADR(0),		/* instruction mode */
 	U8G_ESC_CS(1),		/* enable chip */
 	0x10,			/* set upper 4 bit of the col adr to 0 */
-	/* due to display orientation, the 'left' 4 columns are not visible */
-	0x04,			/* set low 4 bits of the col adr to 4 */
+	0x00,			/* set low 4 bits of the col adr to 0 */
 	U8G_ESC_END		/* end of sequence */
 };
 
@@ -432,10 +420,10 @@ m2_board_es(m2_p ep, uint8_t msg)
 		if (!gpio_get(GPIOB, GPIO11))
 			return M2_KEY_SELECT;
 
-		if (!gpio_get(GPIOB, GPIO12))
+		if (!gpio_get(GPIOB, GPIO10))
 			return M2_KEY_PREV;
 
-		if (!gpio_get(GPIOB, GPIO10))
+		if (!gpio_get(GPIOB, GPIO12))
 			return M2_KEY_NEXT;
 
 		return M2_KEY_NONE;

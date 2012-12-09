@@ -53,7 +53,6 @@ main(void)
 	gBoard->com_init(115200);
 	debug("mavmon");
 
-
 	/* and start the OS */
 	OS::run();
 }

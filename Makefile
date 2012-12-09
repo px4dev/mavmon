@@ -3,11 +3,16 @@
 #
 
 #
+# Which board driver?
+#
+BOARD		?= fld_v2
+
+#
 # Application sources
 #
 SRCS		 = src/main.cpp \
 		   src/board.cpp \
-		   src/board_fld_v2.cpp \
+		   src/board_$(BOARD).cpp \
 		   src/ui.cpp \
 		   src/ui_menu.c
 INCDIRS		 = src

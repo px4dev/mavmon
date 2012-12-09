@@ -46,8 +46,6 @@ static u8g_t u8g;
 typedef OS::process<OS_PRIO_GUI, 1024> TUIProc;
 TUIProc UIProc;
 
-
-
 namespace OS
 {
 template <>
@@ -78,8 +76,7 @@ OS_PROCESS void TUIProc::exec()
 				m2_CheckKey();
 			} while (u8g_NextPage(&u8g));
 		}
-
-		sleep(100);
+		sleep(10);
 	}
 }
 }

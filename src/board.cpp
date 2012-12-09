@@ -34,9 +34,9 @@
 
 #include "board.h"
 
-Board::Board(RingBuffer *com_tx_buf, RingBuffer *com_rx_buf) :
-	_com_tx_buf(com_tx_buf),
-	_com_rx_buf(com_rx_buf)
+Board::Board(uint8_t *tx_buf, unsigned tx_buf_size, uint8_t *rx_buf, unsigned rx_buf_size) :
+	_com_tx_buf(tx_buf, tx_buf_size),
+	_com_rx_buf(rx_buf, rx_buf_size)
 {}
 
 /****************************************************************************
@@ -44,7 +44,7 @@ Board::Board(RingBuffer *com_tx_buf, RingBuffer *com_rx_buf) :
  */
 
 unsigned
-RingBuffer::free()
+Board::RingBuffer::free()
 {
 	if (_head < _tail)
 		return _tail - _head - 1;
@@ -53,7 +53,7 @@ RingBuffer::free()
 }
 
 unsigned
-RingBuffer::contains()
+Board::RingBuffer::contains()
 {
 	if (_head > _tail)
 		return _head - _tail;
@@ -62,7 +62,7 @@ RingBuffer::contains()
 }
 
 void
-RingBuffer::insert(uint8_t c)
+Board::RingBuffer::insert(uint8_t c)
 {
 	unsigned next = advance(_head);
 
@@ -73,7 +73,7 @@ RingBuffer::insert(uint8_t c)
 }
 
 uint8_t
-RingBuffer::remove()
+Board::RingBuffer::remove()
 {
 	uint8_t c = 0;
 
@@ -86,7 +86,7 @@ RingBuffer::remove()
 }
 
 unsigned
-RingBuffer::advance(unsigned index)
+Board::RingBuffer::advance(unsigned index)
 {
 	index++;
 
@@ -104,7 +104,7 @@ void Board::com_tx_start(void) {}
 void
 Board::com_rx(uint8_t c)
 {
-	_com_rx_buf->insert(c);
+	_com_rx_buf.insert(c);
 
 	/* wake anyone that might be waiting */
 	_rx_data_avail.signal_isr();
@@ -113,7 +113,7 @@ Board::com_rx(uint8_t c)
 bool
 Board::com_tx(uint8_t &c)
 {
-	unsigned avail = _com_tx_buf->contains();
+	unsigned avail = _com_tx_buf.contains();
 
 	/* if there is no more data to send, bail now */
 	if (avail == 0)
@@ -123,13 +123,13 @@ Board::com_tx(uint8_t &c)
 	 * Mitigate writer wakeup costs by only signalling that there is
 	 * more TX space when at least 8 bytes are free.
 	 */
-	if ((_com_tx_buf->capacity() - avail) > 8)
+	if ((_com_tx_buf.capacity() - avail) > 8)
 		_tx_space_avail.signal_isr();
 
 	/*
 	 * Get the byte we're going to send.
 	 */
-	c = _com_tx_buf->remove();
+	c = _com_tx_buf.remove();
 	return true;
 }
 
@@ -140,7 +140,7 @@ Board::com_write(const uint8_t *data, unsigned count)
 	TCritSect cs;
 
 	while (count) {
-		unsigned avail = _com_tx_buf->free();
+		unsigned avail = _com_tx_buf.free();
 
 		/* if we have no tx space, wait for some to free up */
 		if (avail == 0) {
@@ -152,7 +152,7 @@ Board::com_write(const uint8_t *data, unsigned count)
 			avail = count;
 
 		while (avail--)
-			_com_tx_buf->insert(*data++);
+			_com_tx_buf.insert(*data++);
 
 		count -= avail;
 		com_tx_start();
@@ -164,13 +164,13 @@ Board::com_read(uint8_t *data, unsigned size)
 {
 	TCritSect cs;
 
-	unsigned avail = _com_rx_buf->contains();
+	unsigned avail = _com_rx_buf.contains();
 
 	if (avail > size)
 		avail = size;
 
 	for (unsigned i = 0; i < avail; i++)
-		data[i] = _com_rx_buf->remove();
+		data[i] = _com_rx_buf.remove();
 
 	return avail;
 }
@@ -178,13 +178,13 @@ Board::com_read(uint8_t *data, unsigned size)
 int
 Board::com_write_space()
 {
-	return _com_tx_buf->free();
+	return _com_tx_buf.free();
 }
 
 int
 Board::com_read_available()
 {
-	return _com_rx_buf->contains();
+	return _com_rx_buf.contains();
 }
 
 void Board::led_set(bool state __unused) {}
