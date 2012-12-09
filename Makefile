@@ -13,6 +13,7 @@ BOARD		?= fld_v2
 SRCS		 = src/main.cpp \
 		   src/board.cpp \
 		   src/board_$(BOARD).cpp \
+		   src/comms.cpp \
 		   src/ui.cpp \
 		   src/ui_menu.c
 INCDIRS		 = src
@@ -27,6 +28,9 @@ UPLOAD_DEV	 = /dev/cu.usbserial-00001114B
 #
 PRODUCT		 = mavmon
 SUFFIXES	 = .bin .elf
+BUILDDIR	 = build
+PRODUCTS	 = $(addprefix $(BUILDDIR)/$(PRODUCT),$(SUFFIXES))
+all: $(PRODUCTS)
 
 #
 # Toolchain
@@ -41,6 +45,7 @@ ARCH_FLAGS	 = -mthumb -mcpu=cortex-m3 -msoft-float
 
 EXTRA_CFLAGS	 =
 EXTRA_DEFINES	 =
+EXTRA_DEPS	 = 
 
 #
 # scmRTOS
@@ -61,7 +66,6 @@ ifeq ($(wildcard $(ext)),)
 R		:= $(shell mkdir -p ext)
 endif
 
-
 #
 # libopencm3
 #
@@ -75,6 +79,32 @@ LCM3_LIB	 = opencm3_stm32f1
 LCM3_TARGETS	 = stm32/f1
 INCDIRS		+= $(LCM3)/include
 EXTRA_DEFINES	+= -DSTM32F1
+EXTRA_DEPS	+= $(LCM3)
+
+.PHONY: $(LCM3)
+$(LCM3):
+	$(Q) make -C $(LCM3) TARGETS=$(LCM3_TARGETS) lib
+
+#
+# MAVLink
+#
+MAVLINK		 = ext/mavlink
+MAVLINK_URL	 = https://github.com/mavlink/mavlink.git
+ifeq ($(wildcard $(MAVLINK)),)
+$(info FETCH MAVLink)
+R		:= $(shell cd ext && git clone $(MAVLINK_URL))
+endif
+MAVLINK_HDRS	 = $(BUILDDIR)/include/mavlink
+INCDIRS		+= $(BUILDDIR)/include
+EXTRA_DEPS	+= $(MAVLINK_HDRS)
+
+$(MAVLINK_HDRS):
+	@echo Generate MAVLink headers
+	@mkdir -p $(MAVLINK_HDRS)
+	$(Q) $(MAVLINK)/pymavlink/generator/mavgen.py \
+		--lang=C \
+		-o $(MAVLINK_HDRS) \
+		$(MAVLINK)/message_definitions/v1.0/common.xml
 
 #
 # U8glib
@@ -133,10 +163,12 @@ R		:= $(shell cd ext && git clone $(STM32FLASH_URL))
 endif
 UPLOADER	 = $(STM32FLASH)/stm32flash
 
+$(UPLOADER):
+	$(Q) make -C $(STM32FLASH)
+
 #
 # Build controls
 #
-BUILDDIR	 = build
 OBJS		 = $(addprefix $(BUILDDIR)/,$(addsuffix .o,$(basename $(SRCS))))
 DEPS		 = $(OBJS:.o=.d)
 GLOBAL_DEPS	 = $(MAKEFILE_LIST)
@@ -198,8 +230,6 @@ endif
 #
 # Rules
 #
-PRODUCTS	 = $(addprefix $(BUILDDIR)/$(PRODUCT),$(SUFFIXES))
-all: $(PRODUCTS)
 
 upload: $(BUILDDIR)/$(PRODUCT).bin $(UPLOADER)
 	@echo UPLOAD $<
@@ -228,14 +258,7 @@ $(BUILDDIR)/%.o: %.S $(GLOBAL_DEPS)
 	@echo BIN $(notdir $@)
 	$(Q) $(OBJCOPY) -O binary $^ $@
 
-$(SRCS): $(LCM3)
-
-.PHONY: $(LCM3)
-$(LCM3):
-	$(Q) make -C $(LCM3) TARGETS=$(LCM3_TARGETS) lib
-
-$(UPLOADER):
-	$(Q) make -C $(STM32FLASH)
+$(SRCS): $(EXTRA_DEPS)
 
 .PHONY: clean
 clean:

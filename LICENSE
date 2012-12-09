@@ -52,10 +52,11 @@ The scmRTOS code is licensed under the following terms:
 Note that MAVmon downloads and utilises a number of software components licensed under
 different terms; see the following files:
 
-  libopencm3/COPYING.LGPL3
-  m2tklib/license.txt
-  u8glib/license.txt
+  ext/libopencm3/COPYING.LGPL3
+  ext/m2tklib/license.txt
+  ext/u8glib/license.txt
+  ext/mavlink/COPYING
 
 once the code has built. As a consequence of the use of these components, the 
-compiled MAVmon code is subject to the terms of the GNU General Public License
-version 3.
+compiled MAVmon code is subject to additional terms and conditions as laid out in
+the above-mentioned documentation.
