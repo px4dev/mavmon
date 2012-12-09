@@ -89,7 +89,8 @@ public:
 	 *
 	 * @param data		Buffer into which data can be read.
 	 * @param size		The size of the receive buffer.
-	 * @return		The number of bytes read.
+	 * @return		The number of bytes read; zero if no data
+	 *			is waiting.
 	 */
 	int			com_read(uint8_t *data, unsigned size);
 

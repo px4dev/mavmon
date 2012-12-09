@@ -27,32 +27,31 @@
  */
 
 /**
- * @file mavmon.h
+ * @file comms.cpp
  *
- * Global definitions for MAVmon.
+ * Serial communications task.
+ *
+ * This task handles both MAVlink and radio configuration tasks.
  */
 
-#pragma once
+#include "mavmon.h"
 
-#include <stdio.h>
-#include <scmRTOS.h>
+typedef OS::process<OS_PRIO_COMMS, 1024> TCommsProc;
+TCommsProc CommsProc;
 
-#ifdef __cplusplus
-# define EXTERN extern "C"
-#else
-# define EXTERN extern
-#endif
+namespace OS
+{
+template <>
+OS_PROCESS void TCommsProc::exec()
+{
+	/* XXX do serial init */
 
-#define debug(fmt, args...)	do { printf(fmt "\r\n", ##args); } while(0)
+	for (;;) {
 
-/*
- * Process list, must match scmRTOS_PROCESS_COUNT
- */
-#define OS_PRIO_LED	OS::pr0
-#define OS_PRIO_GUI	OS::pr1
-#define OS_PRIO_COMMS	OS::pr2
+		/* XXX run our state machine */
 
-/*
- * Compiler niceties
- */
-#define __unused	__attribute__((unused))
+		/* if there's nothing to do, wait for stuff to accumulate */
+		sleep(10);
+	}
+}
+}
